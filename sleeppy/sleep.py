@@ -429,8 +429,8 @@ class SleepPy:
             df_wear = pd.DataFrame(df_std.copy()) * 0 + 1
             df_wear.columns = ["wear"]
             for i in range(len(df_wear)):
-                if df_range.ix[i] <= 1 or df_std.ix[i] <= 1:
-                    df_wear.ix[i] = 0
+                if df_range.iloc[i] <= 1 or df_std.iloc[i] <= 1:
+                    df_wear.iloc[i] = 0
 
             # save before rescoring
             df_wear.to_hdf(
@@ -753,7 +753,7 @@ class SleepPy:
         # calculate std for all windows
         while idx < len(df) - int(900 * self.fs):  # run until we reach the end
             xyz = (
-                df.ix[idx : idx + int(3600 * self.fs)].std().values
+                df.iloc[idx : idx + int(3600 * self.fs)].std().values
             )  # save std in x y and z
             rstd.append(
                 [df.index[idx], xyz[0], xyz[1], xyz[2]]
@@ -780,8 +780,8 @@ class SleepPy:
         # calculate range for all windows
         while idx < len(df) - int(900 * self.fs):  # run until we reach the end
             xyz = (
-                df.ix[idx : idx + int(3600 * self.fs)].max().values
-                - df.ix[idx : idx + int(3600 * self.fs)].min().values
+                df.iloc[idx : idx + int(3600 * self.fs)].max().values
+                - df.iloc[idx : idx + int(3600 * self.fs)].min().values
             )  # save range in x y z
             rr.append(
                 [df.index[idx], xyz[0], xyz[1], xyz[2]]
@@ -1376,44 +1376,44 @@ def bin2df(full_path):
         df = []
         while full_line:
             full_line = in_file.readline()
-            line = full_line[:].split("\r\n")[0]
+            line = full_line[:].split(b"\r\n")[0]
             count += 1
             if count < 60:
-                if "x gain" in line:
-                    x_gain = int(line.split(":")[-1])
+                if b"x gain" in line:
+                    x_gain = int(line.split(b":")[-1])
 
-                if "x offset" in line:
-                    x_offset = int(line.split(":")[-1])
+                if b"x offset" in line:
+                    x_offset = int(line.split(b":")[-1])
 
-                if "y gain" in line:
-                    y_gain = int(line.split(":")[-1])
+                if b"y gain" in line:
+                    y_gain = int(line.split(b":")[-1])
 
-                if "y offset" in line:
-                    y_offset = int(line.split(":")[-1])
+                if b"y offset" in line:
+                    y_offset = int(line.split(b":")[-1])
 
-                if "z gain" in line:
-                    z_gain = int(line.split(":")[-1])
+                if b"z gain" in line:
+                    z_gain = int(line.split(b":")[-1])
 
-                if "z offset" in line:
-                    z_offset = int(line.split(":")[-1])
+                if b"z offset" in line:
+                    z_offset = int(line.split(b":")[-1])
 
-                if "Volts" in line:
-                    volts = int(line.split(":")[-1])
+                if b"Volts" in line:
+                    volts = int(line.split(b":")[-1])
 
-                if "Lux" in line:
-                    lux = int(line.split(":")[-1])
+                if b"Lux" in line:
+                    lux = int(line.split(b":")[-1])
 
-            if "Page Time:" in line:
+            if b"Page Time:" in line:
                 time = pd.to_datetime(
-                    ":".join(line.split(":")[1:])[0:-2], format="%Y-%m-%d %H:%M:%S:%f"
+                    ":".join(line.decode('ascii').split(":")[1:])[0:-2], format="%Y-%m-%d %H:%M:%S:%f"
                 )
 
-            if "Temperature:" in line:
-                temp = float(line.split(":")[-1])
+            if b"Temperature:" in line:
+                temp = float(line.split(b":")[-1])
 
             if not fs:
-                if "Measurement Frequency:" in line:
-                    fs = float(line.split(":")[-1].split(" ")[0])
+                if b"Measurement Frequency:" in line:
+                    fs = float(line.split(b":")[-1].split(b" ")[0])
                     offset = np.array([1 / fs] * 300) * np.arange(0, 300)
                     delta = pd.to_timedelta(offset, unit="s")
 
@@ -1422,10 +1422,11 @@ def bin2df(full_path):
                 hexes = struct.unpack("12s " * 300, line)
                 bins = (
                     struct.unpack(
-                        "12s 12s 12s 10s 1s 1s", bin(int(hx, 16))[2:].zfill(48)
+                        "12s 12s 12s 10s 1s 1s", bin(int(hx, 16))[2:].zfill(48).encode()
                     )
                     for hx in hexes
                 )
+                bins = ((x.decode('ascii') for x in b) for b in bins)
                 decode = pd.DataFrame(
                     bins,
                     columns=["X", "Y", "Z", "LUX", "Button", "_"],
